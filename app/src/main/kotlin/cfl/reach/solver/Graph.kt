@@ -2,15 +2,25 @@ package cfl.reach.solver
 
 data class Edge(val i: Int, val j: Int, val symbol: Symbol)
 
-class Graph(val edges: List<Edge>) {
+class Graph(forwardEdges: List<Edge>) {
     private val graph: HashMap<Int, HashMap<Symbol, HashSet<Edge>>> = HashMap()
     private val graphInv: HashMap<Int, HashMap<Symbol, HashSet<Edge>>> = HashMap()
+
+    val edges: List<Edge>
     val nodes: Set<Int>
         get() = graph.keys
 
     init {
-        for (e in edges) {
-            add(e)
+        edges = mutableListOf()
+        for ((i, j, symbol) in forwardEdges) {
+            val forward = Edge(i, j, symbol)
+            edges.add(forward)
+            add(forward)
+            if (symbol is Terminal) {
+                val inverted = Edge(j, i, symbol.inv())
+                edges.add(inverted)
+                add(inverted)
+            }
         }
     }
 
@@ -28,16 +38,5 @@ class Graph(val edges: List<Edge>) {
         graphInv.getOrPut(j) { HashMap() }
             .getOrPut(symbol) { HashSet() }
             .add(Edge(i, j, symbol))
-
-        if (symbol is Terminal) {
-            val symbolInv = symbol.inv()
-            graph.getOrPut(j) { HashMap() }
-                .getOrPut(symbolInv) { HashSet() }
-                .add(Edge(j, i, symbolInv))
-
-            graphInv.getOrPut(i) { HashMap() }
-                .getOrPut(symbolInv) { HashSet() }
-                .add(Edge(j, i, symbolInv))
-        }
     }
 }

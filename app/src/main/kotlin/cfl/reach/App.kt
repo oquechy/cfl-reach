@@ -6,8 +6,7 @@ import java.util.Scanner
 import kotlin.system.exitProcess
 
 object App {
-    val USAGE =
-        """USAGE:
+    val USAGE = """USAGE:
         |   ./gradlew run --args='<lang> <file>'
         | 
         |To run on c++ data:
@@ -18,8 +17,7 @@ object App {
     """.trimMargin()
 
     val CppGrammar = Grammar(
-        NonTerminal("M"),
-        listOf(
+        NonTerminal("M"), listOf(
             Production(NonTerminal("M"), listOf(Terminal("d^-1"), NonTerminal("Vd"))),
             Production(NonTerminal("Vd"), listOf(NonTerminal("V"), Terminal("d"))),
             Production(NonTerminal("V"), listOf(NonTerminal("(M?a^-1)*"), NonTerminal("M?(aM?)*"))),
@@ -33,6 +31,38 @@ object App {
             Production(NonTerminal("(aM?)*"), listOf(NonTerminal("aM?"), NonTerminal("(aM?)*"))),
             Production(NonTerminal("aM?"), listOf(Terminal("a"), NonTerminal("M?"))),
         )
+    )
+
+    val JavaGrammar = listOf(
+        Production(NonTerminal("A"), listOf(NonTerminal("flowsTo^-1"), NonTerminal("flowsTo"))),
+        Production(
+            NonTerminal("flowsTo"),
+            listOf(Terminal("alloc"), NonTerminal("(assign | SAL)*"))
+        ),
+        Production(NonTerminal("(assign | SAL)*"), listOf(Empty)),
+        Production(
+            NonTerminal("(assign | SAL)*"),
+            listOf(NonTerminal("(assign | SAL)"), NonTerminal("(assign | SAL)*"))
+        ),
+        Production(NonTerminal("(assign | SAL)"), listOf(Terminal("assign"))),
+        Production(NonTerminal("(assign | SAL)"), listOf(NonTerminal("SAL"))),
+        Production(
+            NonTerminal("flowsTo^-1"),
+            listOf(NonTerminal("(assign^-1 | L^-1AS^-1)*"), Terminal("alloc^-1"))
+        ),
+        Production(NonTerminal("(assign^-1 | L^-1AS^-1)*"), listOf(Empty)),
+        Production(
+            NonTerminal("(assign^-1 | L^-1AS^-1)*"),
+            listOf(
+                NonTerminal("(assign^-1 | L^-1AS^-1)"),
+                NonTerminal("(assign^-1 | L^-1AS^-1)*")
+            )
+        ),
+        Production(NonTerminal("(assign^-1 | L^-1AS^-1)"), listOf(Terminal("assign^-1"))),
+        Production(
+            NonTerminal("(assign^-1 | L^-1AS^-1)"),
+            listOf(NonTerminal("L^-1AS^-1"))
+        ),
     )
 }
 
@@ -54,7 +84,9 @@ fun main(args: Array<String>) {
         }
 
         "java" -> {
-            solution.addAll(solve(Graph(readEdges(args[1])), Grammar(Empty, listOf())))
+            val edges = readEdges(args[1])
+            val productions = buildFieldProductions(edges)
+            solution.addAll(solve(Graph(edges), Grammar(NonTerminal("A"), productions)))
         }
 
         else -> {
@@ -80,4 +112,44 @@ fun readEdges(file: String): List<Edge> {
         }
     }
     return edges
+}
+
+fun buildFieldProductions(edges: List<Edge>): List<Production> {
+    val loadedFields = HashSet<String>()
+    val storedFields = HashSet<String>()
+    val productions = App.JavaGrammar.toMutableList()
+    for ((_, _, s) in edges) {
+        if (s is Terminal) {
+            if (s.s.startsWith("load_")) {
+                loadedFields.add(s.s.drop(5))
+            } else if (s.s.startsWith("store_")) {
+                storedFields.add(s.s.drop(6))
+            }
+        }
+    }
+    for (f in loadedFields) {
+        if (f in storedFields) {
+            productions.addAll(
+                listOf(
+                    Production(
+                        NonTerminal("SAL"),
+                        listOf(Terminal("store_$f"), NonTerminal("A load_$f"))
+                    ),
+                    Production(
+                        NonTerminal("A load_$f"),
+                        listOf(NonTerminal("A"), Terminal("load_$f"))
+                    ),
+                    Production(
+                        NonTerminal("L^-1AS^-1"),
+                        listOf(Terminal("load_$f^-1"), NonTerminal("A store_$f^-1"))
+                    ),
+                    Production(
+                        NonTerminal("A store_$f^-1"),
+                        listOf(NonTerminal("A"), Terminal("store_$f^-1"))
+                    ),
+                )
+            )
+        }
+    }
+    return productions
 }

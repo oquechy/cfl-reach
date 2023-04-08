@@ -12,3 +12,16 @@ On c++ data:
 On java data:
 
     ./gradlew run --args='java path/to/file.csv'
+
+## Benchmarks
+    
+Run on data from C_points_to:
+
+    ./gradlew test --tests '*.cpp bzip' 
+    ./gradlew test --tests '*.cpp gzip' 
+    ./gradlew test --tests '*.cpp ls' 
+
+Run on data from Java_points_to:
+
+    ./gradlew test --tests '*.java lusearch' 
+    ./gradlew test --tests '*.java sunflow' 
