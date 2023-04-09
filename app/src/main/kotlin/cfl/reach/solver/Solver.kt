@@ -2,7 +2,7 @@ package cfl.reach.solver
 
 class SolverException(message: String) : RuntimeException(message)
 
-fun solve(graph:Graph, grammar:Grammar) : List<Pair<Int, Int>> {
+fun solve(graph: Graph, grammar: Grammar): List<Pair<Int, Int>> {
     val worklist = ArrayDeque<Edge>()
     worklist.addAll(graph.edges)
 
@@ -53,10 +53,8 @@ fun solve(graph:Graph, grammar:Grammar) : List<Pair<Int, Int>> {
     }
 
     val reachable = mutableListOf<Pair<Int, Int>>()
-    for (i in graph.nodes) {
-        for ((_, j, _) in graph.getEdgesFrom(i, grammar.start)) {
-            reachable.add(Pair(i, j))
-        }
+    for ((i, j, _) in graph.getEdgesBySymbol(grammar.start)) {
+        reachable.add(Pair(i, j))
     }
     return reachable
 }

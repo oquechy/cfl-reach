@@ -34,34 +34,34 @@ object App {
     )
 
     val JavaGrammar = listOf(
-        Production(NonTerminal("A"), listOf(NonTerminal("flowsTo^-1"), NonTerminal("flowsTo"))),
+        Production(NonTerminal("A"), listOf(NonTerminal("PointsTo"), NonTerminal("FlowsTo"))),
         Production(
-            NonTerminal("flowsTo"),
-            listOf(Terminal("alloc"), NonTerminal("(assign | SAL)*"))
+            NonTerminal("PointsTo"),
+            listOf(NonTerminal("(assign | LAS)*"), Terminal("alloc"))
         ),
-        Production(NonTerminal("(assign | SAL)*"), listOf(Empty)),
+        Production(NonTerminal("(assign | LAS)*"), listOf(Empty)),
         Production(
-            NonTerminal("(assign | SAL)*"),
-            listOf(NonTerminal("(assign | SAL)"), NonTerminal("(assign | SAL)*"))
+            NonTerminal("(assign | LAS)*"),
+            listOf(NonTerminal("(assign | LAS)"), NonTerminal("(assign | LAS)*"))
         ),
-        Production(NonTerminal("(assign | SAL)"), listOf(Terminal("assign"))),
-        Production(NonTerminal("(assign | SAL)"), listOf(NonTerminal("SAL"))),
+        Production(NonTerminal("(assign | LAS)"), listOf(Terminal("assign"))),
+        Production(NonTerminal("(assign | LAS)"), listOf(NonTerminal("LAS"))),
         Production(
-            NonTerminal("flowsTo^-1"),
-            listOf(NonTerminal("(assign^-1 | L^-1AS^-1)*"), Terminal("alloc^-1"))
+            NonTerminal("FlowsTo"),
+            listOf(Terminal("alloc^-1"), NonTerminal("(assign^-1 | S^-1AL^-1)*"))
         ),
-        Production(NonTerminal("(assign^-1 | L^-1AS^-1)*"), listOf(Empty)),
+        Production(NonTerminal("(assign^-1 | S^-1AL^-1)*"), listOf(Empty)),
         Production(
-            NonTerminal("(assign^-1 | L^-1AS^-1)*"),
+            NonTerminal("(assign^-1 | S^-1AL^-1)*"),
             listOf(
-                NonTerminal("(assign^-1 | L^-1AS^-1)"),
-                NonTerminal("(assign^-1 | L^-1AS^-1)*")
+                NonTerminal("(assign^-1 | S^-1AL^-1)"),
+                NonTerminal("(assign^-1 | S^-1AL^-1)*")
             )
         ),
-        Production(NonTerminal("(assign^-1 | L^-1AS^-1)"), listOf(Terminal("assign^-1"))),
+        Production(NonTerminal("(assign^-1 | S^-1AL^-1)"), listOf(Terminal("assign^-1"))),
         Production(
-            NonTerminal("(assign^-1 | L^-1AS^-1)"),
-            listOf(NonTerminal("L^-1AS^-1"))
+            NonTerminal("(assign^-1 | S^-1AL^-1)"),
+            listOf(NonTerminal("S^-1AL^-1"))
         ),
     )
 }
@@ -76,27 +76,34 @@ fun main(args: Array<String>) {
         exitProcess(1)
     }
 
-    val solution = mutableListOf<Pair<Int, Int>>()
     when (args[0]) {
         "cpp" -> {
             val edges = readEdges(args[1])
-            solution.addAll(solve(Graph(edges), App.CppGrammar))
+            val aliases = solve(Graph(edges), App.CppGrammar)
+            println("Alias size: ${aliases.size}")
+            println("Alias set:")
+            for ((i, j) in aliases) {
+                println("$i $j")
+            }
         }
 
         "java" -> {
             val edges = readEdges(args[1])
             val productions = buildFieldProductions(edges)
-            solution.addAll(solve(Graph(edges), Grammar(NonTerminal("A"), productions)))
+            val graph = Graph(edges)
+            val aliases = solve(graph, Grammar(NonTerminal("A"), productions))
+            println("PointsTo size: ${graph.countEdgesBySymbol(NonTerminal("PointsTo"))}")
+            println("Alias size: ${aliases.size}")
+            println("Alias set:")
+            for ((i, j) in aliases) {
+                println("$i $j")
+            }
         }
 
         else -> {
             System.err.println(App.USAGE)
             exitProcess(1)
         }
-    }
-
-    for ((i, j) in solution) {
-        println("$i $j")
     }
 }
 
@@ -132,20 +139,20 @@ fun buildFieldProductions(edges: List<Edge>): List<Production> {
             productions.addAll(
                 listOf(
                     Production(
-                        NonTerminal("SAL"),
-                        listOf(Terminal("store_$f"), NonTerminal("A load_$f"))
+                        NonTerminal("LAS"),
+                        listOf(Terminal("load_$f"), NonTerminal("A store_$f"))
                     ),
                     Production(
-                        NonTerminal("A load_$f"),
-                        listOf(NonTerminal("A"), Terminal("load_$f"))
+                        NonTerminal("A store_$f"),
+                        listOf(NonTerminal("A"), Terminal("store_$f"))
                     ),
                     Production(
-                        NonTerminal("L^-1AS^-1"),
-                        listOf(Terminal("load_$f^-1"), NonTerminal("A store_$f^-1"))
+                        NonTerminal("S^-1AL^-1"),
+                        listOf(Terminal("store_$f^-1"), NonTerminal("A load_$f^-1"))
                     ),
                     Production(
-                        NonTerminal("A store_$f^-1"),
-                        listOf(NonTerminal("A"), Terminal("store_$f^-1"))
+                        NonTerminal("A load_$f^-1"),
+                        listOf(NonTerminal("A"), Terminal("load_$f^-1"))
                     ),
                 )
             )

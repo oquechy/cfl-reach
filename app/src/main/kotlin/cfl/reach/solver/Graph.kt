@@ -6,19 +6,18 @@ class Graph(forwardEdges: List<Edge>) {
     private val graph: HashMap<Int, HashMap<Symbol, HashSet<Edge>>> = HashMap()
     private val graphInv: HashMap<Int, HashMap<Symbol, HashSet<Edge>>> = HashMap()
 
-    val edges: List<Edge>
     val nodes: Set<Int>
         get() = graph.keys
+    val edges: List<Edge>
+        get() = allEdges
+    private val allEdges: MutableList<Edge> = mutableListOf()
 
     init {
-        edges = mutableListOf()
         for ((i, j, symbol) in forwardEdges) {
             val forward = Edge(i, j, symbol)
-            edges.add(forward)
             add(forward)
             if (symbol is Terminal) {
                 val inverted = Edge(j, i, symbol.inv())
-                edges.add(inverted)
                 add(inverted)
             }
         }
@@ -30,6 +29,7 @@ class Graph(forwardEdges: List<Edge>) {
     fun getEdgesTo(j:Int, symbol: Symbol) = graphInv[j]?.get(symbol) ?: listOf()
 
     fun add(e: Edge) {
+        allEdges.add(e)
         val (i, j, symbol) = e
         graph.getOrPut(i) { HashMap() }
             .getOrPut(symbol) { HashSet() }
@@ -38,5 +38,21 @@ class Graph(forwardEdges: List<Edge>) {
         graphInv.getOrPut(j) { HashMap() }
             .getOrPut(symbol) { HashSet() }
             .add(Edge(i, j, symbol))
+    }
+
+    fun countEdgesBySymbol(s: Symbol): Int {
+        var cnt = 0
+        for (i in nodes) {
+            cnt += getEdgesFrom(i, s).size
+        }
+        return cnt
+    }
+
+    fun getEdgesBySymbol(s: Symbol): List<Edge> {
+        val edges = mutableListOf<Edge>()
+        for (i in nodes) {
+            edges.addAll(getEdgesFrom(i, s))
+        }
+        return edges
     }
 }

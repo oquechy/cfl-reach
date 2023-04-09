@@ -130,17 +130,17 @@ class SolverTest {
         // v = w.f
         val edges = listOf(
             // o1 --alloc-> x
-            Edge(0, 1, Terminal("alloc")),
+            Edge(1, 0, Terminal("alloc")),
             // x --assign-> w
-            Edge(1, 2, Terminal("assign")),
+            Edge(2, 1, Terminal("assign")),
             // w --load_f-> v
-            Edge(2, 3, Terminal("load_1")),
+            Edge(3, 2, Terminal("load_1")),
             // x --assign-> y
-            Edge(1, 4, Terminal("assign")),
+            Edge(4, 1, Terminal("assign")),
             // z --store_f-> y
-            Edge(5, 4, Terminal("store_1")),
+            Edge(4, 5, Terminal("store_1")),
             // o2 --alloc-> z
-            Edge(6, 5, Terminal("alloc")),
+            Edge(5, 6, Terminal("alloc")),
         )
         val grammar = Grammar(NonTerminal("A"), buildFieldProductions(edges))
         val reach = solve(Graph(edges), grammar)
